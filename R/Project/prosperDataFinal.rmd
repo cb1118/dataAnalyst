@@ -1,0 +1,982 @@
+---
+title: "Prosper Loan Data Analysis"
+author: "Chris Bartsch"
+date: "August 10, 2018"
+output: html_document
+---
+================================
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, packages}
+# Load  packages 
+
+library(ggplot2)
+library(dplyr)
+library(gridExtra)
+library(RColorBrewer)
+library(memisc)
+```
+
+# Analysis of Prosper Loan Data
+
+> My analysis is done on the Prosper loan data file.  This is a relatively large
+data set with nearly 114,000 records.  The data set has a many variables, but
+only a subset has been analyzed below.
+
+###Cited Sources
+sources: <br>  
+  1: Some sources may be documented within the body of the RMD file<br>  
+  2: R Documentation, including libraries<br>
+  3: Stack Exchange<br>
+  4: FICO Credit Score site: 
+  https://www.creditsesame.com/blog/credit/credit-score-range-for-experian-transunion-equifax/
+
+
+
+## Load Data
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, Load_the_Data}
+# Load the Data
+
+loandat <- read.csv('prosperLoanData.csv')
+
+```
+
+The Prosper data set contains 113,937 records and 81 variables.
+
+
+# Univariate Plots and initial analysis
+
+
+Generate summary, head and str data outputs (turned off for final output)
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, Univariate_Plots}
+#commented out for final submission
+#summary(loandat)
+#head(loandat)
+#str(loandat)
+#show initial info regardign data frame
+```
+
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, DebtToIncomeRatio}
+
+summary(loandat$DebtToIncomeRatio)
+ggplot(data=loandat, aes(DebtToIncomeRatio)) +
+  geom_histogram() +
+  scale_x_continuous(limits = c(0,1))
+```
+
+Debt to Income ratio limited to 100% and below shows a long tail distribution
+but as expected must loans are on the lower end of the scale.  
+
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, DebtToIncomeRatio2}
+ggplot(data=loandat, aes(DebtToIncomeRatio)) +
+  geom_histogram() +
+  scale_x_log10()
+
+#Debt to Income ratio shows most data (as expected) is on the lower end of the
+#scale
+```
+
+A log10 view of the previous plot shows a much more normal distribution of the 
+data.
+
+It would be interesting to compare Debt to Income Ratio with the ratio of
+monthly payment to monthly income.  I will create that variable and plot it in 
+the following step
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, PaymentToIncomeRatio}
+loandat$pmt.to.income.ratio <- loandat$MonthlyLoanPayment/
+  loandat$StatedMonthlyIncome
+loandat$pmt.to.income.ratio[loandat$pmt.to.income.ratio==0] <- NA
+loandat$pmt.to.income.ratio[is.infinite(loandat$pmt.to.income.ratio)] <- NA
+ 
+ggplot(data=loandat,aes(pmt.to.income.ratio)) +
+  geom_histogram() +
+  scale_x_continuous(limits = c(0,1))
+
+```
+
+Payment to Income Ratio has much more of a long tail distribution than debt
+to income ratio.  Definitely an area to explore further in bivariate and 
+multivariate sections
+
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, LoanStatus}
+#Fix sort order on loans status
+neworder <- c('Completed',
+              'FinalPaymentInProgress',
+              'Current',
+              'Past Due (1-15 days)',
+              'Past Due (16-30 days)',
+              'Past Due (31-60 days)',
+              'Past Due (61-90 days)',
+              'Past Due (91-120 days)',
+              'Past Due (>120 days)',
+              'Defaulted',
+              'Chargedoff',
+              'NA')
+loandat$LoanStatus <- factor(loandat$LoanStatus,levels=neworder)
+
+
+summary(loandat$LoanStatus)
+ggplot(data=loandat, aes(LoanStatus)) +
+  geom_bar() +
+  theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust=1))  
+#View of Loan Status.  Majority of the data falls into 4 categories:
+# Completed, Current, Charged-Off and Default
+```
+
+Loan status counts.  The bulk of the loan statuses are in 4 categories:
+Charged Off, Defaulted, Completed (loan paid off) and Current.  
+
+This looks like it may be a good area to focus on.
+
+NOTE: LoanStatus was sorted into a logical order
+
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, LoanOriginalAMount}
+ggplot(data=loandat, aes(LoanOriginalAmount)) +
+  geom_histogram() +
+  scale_x_continuous(breaks=seq(0,35000,3000))
+```
+
+The majority of the data is for smaller loans (<$20K).  There are some spikes
+which appear at approximately 5,000 increments.  We could surmise that a 
+cusotmer used rounded figures in their loan requests, this would especially be
+true of personal loans and other types of loans which are not for a specific 
+piece of collateral.
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, MonthlyLoanPayment}
+
+ggplot(data=loandat, aes(MonthlyLoanPayment)) +
+  geom_histogram()
+```
+
+Loan payments follow a similar trend to the original loan
+amount as expected.
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, Term}
+ggplot(data=loandat, aes(Term)) +
+  geom_bar() 
+
+```
+
+The term plot solidifies why loan payments and loan amounts are in alignment as 
+there is littel variation in loan terms with nearly all of them being in the 3 
+year or 5 year category.
+
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, Univariate_Plots5}
+ggplot(data=loandat, aes(CreditScoreRangeUpper)) +
+  geom_histogram() +
+  scale_x_continuous(limit=c(300, 990), breaks = seq(300,990,50))
+#Credit scores follow a fairly standard distribution.  Research shows that 
+#the minimum credit score possible is 300.  Removed data which are below 300.
+```
+
+Credit score follows a fairly standard distribution.  Data was limited to values
+of 300 to 990 since those are lowest and highest possible values supported by
+both FICO and Vantage scoring systems.  VantageScoring was changed to an upper
+limit of 850 in 2013 but the data goes back to 2005.
+
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, Univariate_Plots6}
+#Loan Rate
+ggplot(data=loandat, aes(BorrowerAPR)) +
+  geom_histogram() +
+  scale_x_continuous(limits = c(.05,.43), breaks = seq(.05,.43,.05)) 
+#Loan rates follow a normal  bell curve type of distribution with the exception
+#of .36
+
+```
+
+It was somewhat expected that Borrower APR would vary a lot given the data spans
+10 years. The large spike at .36 was not expected.
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, Univariate_Plots7}
+ggplot(data=loandat, aes(ListingCategory..numeric.)) +
+  geom_bar()
+#loan category 1 is the most common (Debt Consolidation)
+#Plot of different loan types available
+```
+
+This was mostly informational.  Debt consolidation (per the data dictionary 
+found here: ) was the most common loan category.  A category of 0 is listed as
+"other"
+
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, Univariate_Plots8}
+p1 <- ggplot(data=loandat, aes(ProsperRating..numeric.)) +
+  geom_bar()
+#Prosper Rating (and score below) are values from Prosper which indicates the
+#risk of the loan.
+
+#Fixing the sort order
+neworder <- c('AA','A','B','C','D','E','HR','NC','NA')
+loandat$ProsperRating..Alpha. <- factor(loandat$ProsperRating..Alpha.,levels=neworder)
+
+p2 <- ggplot(data=loandat, aes(ProsperRating..Alpha.)) +
+  geom_bar()
+# standard distribution aross Prosper ratings and scores.
+
+grid.arrange(p1,p2,ncol=1)
+
+summary(loandat$ProsperScore)
+
+```
+
+The 2 plots above show a distribution of the Prosper Ratings for the loans. The
+alpha rating is the same as numeric with the expected exception that empty 
+values are plotted on the alpha diagram.  Per the Prosper website 
+(https://www.prosper.com/plp/invest/prosper-ratings/), Prosper Rating is defined
+as: 
+
+> The Prosper Rating is our proprietary system that allows us to maintain 
+consistency when evaluating each loan application. Prosper Ratings allow 
+investors to consider a loan's level of risk because the rating represents an
+estimated average annualized loss rate range.
+
+Note: ProsperRating..Alpha. was sorted appropriately
+
+This is anothe area to be analzed further to see how Prosper Rating correlates 
+to  other loan data.
+
+> **NOTE:** there are over 29000 NA values for Prosper Ratings. This is due to
+prosper scores not being used until July 2009 per the Prosper website
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, Univariate_Plots9}
+
+p1 <- ggplot(data=loandat, aes(x=EmploymentStatusDuration)) +
+  geom_histogram() +
+  scale_x_continuous(breaks=seq(0,700, 50))
+
+p2 <- ggplot(data=loandat, aes(x=EmploymentStatusDuration)) +
+  geom_histogram() +
+  scale_x_log10()
+
+grid.arrange(p1,p2,ncol=1)
+#Log 10 of employment status duration gives a more clear view of distribution
+```
+
+This is is a comparison of Employment Status Duration with with a both a as is
+x scale and a log 10 view.  Its not clear from the data if the long tail 
+distribution is a result of more applicants being younger and new to the work
+force or simply the rsult of applicants changing careers
+
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, Univariate_Plots10}
+
+#Loan Status 
+summary(loandat$LoanStatus)
+
+loandat <- subset(loandat,LoanStatus !=  'Cancelled')
+
+#Creating new columns and new values for loan status to make the data more 
+#usable and plottable.
+
+#create rollup buckets
+#     Paid Off = Completed + FinalPaymentInProgress
+#     In Default = Defaulted + ChargedOff (based on banking industry defs)
+#     Missed 1-2 Pmts = Past Due 1-15, 16-30, 31-60
+#     Missed 3+ Pmts = Past Due 61 days and over
+#     Current = Current
+
+loandat$loan.status.rollup <- case_when(
+     loandat$LoanStatus == 'Current' ~ 'b) Current',
+     loandat$LoanStatus == 'Defaulted' ~ 'e) In Default',
+     loandat$LoanStatus == 'Chargedoff' ~ 'e) In Default',
+     loandat$LoanStatus == 'Completed' ~ 'a) Paid Off',
+     loandat$LoanStatus == 'FinalPaymentInProgress' ~ 'a) Paid Off',
+     loandat$LoanStatus == 'Past Due (1-15 days)' ~ 'c) Missed 1 or 2 Pmts',
+     loandat$LoanStatus == 'Past Due (16-30 days)' ~ 'c) Missed 1 or 2 Pmts',
+     loandat$LoanStatus == 'Past Due (31-60 days)' ~ 'c) Missed 1 or 2 Pmts',
+     loandat$LoanStatus == 'Past Due (61-90 days)' ~ 'd) Missed 3 Plus Pmts',
+     loandat$LoanStatus == 'Past Due (91-120 days)' ~ 'd) Missed 3 Plus Pmts',
+     loandat$LoanStatus == 'Past Due (>120 days)' ~ 'd) Missed 3 Plus Pmts',
+     TRUE ~ 'NA')
+
+#creating a numeric value field for loan status
+loandat$loan.status.num <- case_when(
+     loandat$LoanStatus == 'Current' ~ 2,
+     loandat$LoanStatus == 'Defaulted' ~ 9,
+     loandat$LoanStatus == 'Chargedoff' ~ 10,
+     loandat$LoanStatus == 'Completed' ~ 0,
+     loandat$LoanStatus == 'FinalPaymentInProgress' ~ 1,
+     loandat$LoanStatus == 'Past Due (1-15 days)' ~ 3,
+     loandat$LoanStatus == 'Past Due (16-30 days)' ~ 4,
+     loandat$LoanStatus == 'Past Due (31-60 days)' ~ 5,
+     loandat$LoanStatus == 'Past Due (61-90 days)' ~ 6,
+     loandat$LoanStatus == 'Past Due (91-120 days)' ~ 7,
+     loandat$LoanStatus == 'Past Due (>120 days)' ~ 8)
+
+
+#Convert the rollup to a factor
+loandat$loan.status.rollup <- factor(loandat$loan.status.rollup)
+
+
+```
+
+## Univariate Analsys Summary
+
+### Data Structure
+The data contains a very large number of variables with data about each loan
+from Prosper Bank ranging from 2005 to 2014.  There are 81 variables in nearly 
+114000 observations
+
+### Primary interest area?
+I want to explore what factors contribute to the ability of a customer to stay
+current on their loan payments. Primarily this will mean looking at primary
+variables which are central to getting a loan and making a loan payment: The 
+amount of the monthly pmt, the customers income and their credit rating.  I will
+use this data to see how it relates to Loan Status and the Prosper Rating.
+
+### Features in the dataset which will help in the analysis
+In the initial exploration of the data set, it appears that factors such as 
+credit rating, loan rate, prosper rating and employment status amount will need
+further exploration.  
+
+### New variables created
+In the initial analysis, new variables were created for loan status as well as
+payment to income ratios. Since I am looking at loan status vs Prosper score, I
+created a few different variations of the loan status data to aid in the 
+analysis.  These are explained in the above code block
+
+> ** loan.status.rollup ** [Converted to Factor]
+Paid Off = Completed + FinalPaymentInProgress
+In Default = Defaulted + ChargedOff (based on banking industry defs)
+Missed 1-2 Pmts = Past Due 1-15, 16-30, 31-60
+Missed 3+ Pmts = Past Due 61 days and over
+Current = Current
+
+> ** loan.status.num ** numeric value field for loan status
+
+> ** loan.status.rollup ** sortable field for loan status
+
+### Unusual distributions
+No significant chagnes to the data were made based on the distributions. As 
+mentioned earlier, the loan status data was updated for plotting.  Also noted 
+that the prosper rating has 29,000 NA values.  
+
+Employment duration and Debt to Income ratio show a long tail distribution but 
+both looked more reasonable using log10 scale.
+
+Listing category was very skewed towards loan categories of Debt Consolidation
+and "other".  More research is needed here
+
+
+#Bivariate Plots and Analysis
+
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, Loan_Pmt_and_D2IR}
+
+ggplot(data=loandat, aes(x=MonthlyLoanPayment, y=DebtToIncomeRatio)) +
+  geom_point(alpha=.05, size=2, position='jitter') +
+  ylim(0,1) +
+  stat_smooth(method='lm')
+
+with(loandat,cor.test(MonthlyLoanPayment,DebtToIncomeRatio))
+```
+
+Monthly Loan Payment plotted against Debt To Income Ratio shows some correlation
+but it is not strong.  The correlation calculation produces a small value which
+corresponds
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, Loan_Pmt_and_Income}
+
+ggplot(data=loandat, aes(x=MonthlyLoanPayment, y=StatedMonthlyIncome)) +
+  geom_point(alpha=.05, size=2, position='jitter') +
+  ylim(0,50000) +
+  stat_smooth(method='lm')
+
+with(loandat,cor.test(MonthlyLoanPayment,StatedMonthlyIncome))
+```
+
+The correlation between Monthly Loan Payment and Monthly Income is stronger.  In
+future plots we can use the pmt.to.income.ratio calcuated variable to compare 
+this data to other variables.
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, P2IR_and_D2IR}
+ggplot(data=loandat, aes(y=pmt.to.income.ratio, 
+                         x=DebtToIncomeRatio)) +
+  geom_point(alpha=.05, size=2, position='jitter') +
+  ylim(0,.5) +
+  xlim(0,1) +
+  stat_smooth(method='lm')
+
+with(loandat,cor.test(pmt.to.income.ratio,DebtToIncomeRatio))
+```
+
+The Payment to Income Ratio has a pretty strong correlation to Debt to Income 
+ratio. However, it should be noted that Debt to Income Ratio is calculated at
+the time of the loan and does not inclue the loan itself.  I believe what this 
+data is really telling us is that it is unlikely that loan applicans do not 
+already have debt prior to the loan being sought.
+
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, Loan_Pmt_and_Income_Range}
+ggplot(data=loandat,aes(y=MonthlyLoanPayment, x=IncomeRange)) +
+  geom_boxplot() +
+  stat_summary(fun.y=mean, geom = 'point', shape=4)
+
+```
+
+The boxplot shows what is largely expected but the $0 income range data is 
+suspect.  Based on the median and 3rd quartile, it appears this may be 
+situations where income was not recorded or was not given.
+
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, Prosper_vs_loan_status}
+#prosper vs loan status
+ggplot(data=loandat, aes(x=ProsperScore, y=loan.status.num)) +
+  geom_point(alpha=.05, size=2, position='jitter')
+```
+
+Scatter plot shows that higher Ratings are aligned with current loans and the
+rating trends down as the loan payment situation deteriorates. This downward
+trend was not as clear as I expected it to be.
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, Prosper_vs_loan_status_rollup}
+ggplot(aes(y = ProsperRating..numeric., x=loan.status.rollup), data = loandat) +
+  geom_boxplot() +
+  stat_summary(fun.y=mean, geom = 'point', shape=4)
+```
+
+The box plot output looks reasonable across the different rollups with the 
+In Default category producing the lowest overal mean and median prosper score.
+This indicates that the Prosper rating is accurate.  Interesting note is that 
+the 3rd quartile is much lower for paid off loans than it is for current loans.
+Certainly this is brought down by the fact that many loans at the low end of 
+the propser scale do pay off their loans.
+
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, CreditScore_and_Prosper}
+
+ggplot(data=loandat, aes(x=ProsperRating..numeric., y=CreditScoreRangeUpper)) +
+  geom_point(alpha=.1, size=2, position='jitter') +
+  scale_y_continuous(limits = c(600,900)) +
+  stat_smooth(method='lm')
+```
+
+We see a  strong positive correlation between prosper ratings and credit
+scores
+
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, CreditScore_and_LoanStatus}
+
+ggplot(data=loandat, aes(x=loan.status.num, y=CreditScoreRangeUpper)) +
+  geom_point(alpha=.1, size=2, position='jitter') +
+  scale_y_continuous(limits = c(600,900)) +
+  stat_smooth(method='lm')
+
+
+```
+
+A negative correlation was expected between loan status and credit score but it
+is weaker than expected.  
+
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, Bivariate_Plots3}
+
+#Credit score and loan status - Box Plots
+ggplot(aes(x = LoanStatus, y=CreditScoreRangeUpper), data = loandat) +
+  geom_boxplot() +
+  ylim(300,990) +
+  theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust=1)) +
+  stat_summary(fun.y=mean, geom = 'point', shape=4)
+```
+
+A boxplot view of credit score and Loan status clearly shows the lower credit
+score ranges for defaulted and charged off loans.  Interestingly, the credit
+score range for completed loans has a lower 1st quartile than all other
+categories except Defaulted and Charged off.  This may indicate that 
+historically trend lower score customers paid off their loans more often, thus
+lowering the 1st quartile.  The x axis labels are hard to read but they follow
+a best to worst order with best being "Completed" and worst being "Charged Off"
+
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, Employment_Status_and_Prosper}
+
+ggplot(data=subset(loandat, EmploymentStatus != "" & 
+                     EmploymentStatus != "Not available"),
+       aes(x=EmploymentStatus, y=ProsperRating..numeric.)) +
+  geom_boxplot() +
+  stat_summary(fun.y=mean, geom = 'point', shape=4)
+```
+
+The Box Plot shows that median prosper scores are nearly identical for 
+applicants who are employed full time.  I am unsure what a status of "Other" is
+but based on the ranges presented, it appears to be similar to self-employed.
+
+
+## Bivariate Analysis summary
+
+### General Observations
+The Prosper data elements don't appear to show very strong linear relationships.
+While some areas are stronger than others, consistent patterns were somewhat 
+difficult to find.  This not too surpising given the nature of the data.  There 
+are many external factors which impact the status of loan.  Employment status 
+(after the loan is secured, economic factors, marital status, etc will all play
+a role in determining the ability to make loan payments.
+
+Some areas which did stand out:
+- Monthly Income and Monthly loan payments and calculated ratio
+- Credit score has a fairly strong correlation with incomee, loan payment
+and the prosper rating.  It also has correlation with loan status, but negative
+(as expected)
+- Loan status and Prosper rating were not as correlated as would have been 
+expted given that the Prosper rating was established to provide risk score for
+each loan.  This is where external forces likely play a role.
+
+I noted that certain variables are almost certainly weighted more strongly
+in the algorithm which prodcues the prosper sccore.  Credit Sccores, debt to 
+income ratio and monthly income all appear to be contributing factors.
+
+### Observations on other features
+Long Employment Duration is generally associated with lower payment to income
+ratios.  The downward trend is not as strong as might have been expected. 
+
+Interesting note that self-employed customers have the same 1st quartile level 
+for Prosper Rating as Retired and part-time customers but their credit score 
+range is at the higher end
+
+Revolving lines of credit data is pretty consistent across payment to income 
+ratio.  
+
+Debt to Income Ratio vs. Loan Payment.  There were comments on this
+above but I did not expect to see the volume of loans with a very high ratio
+
+
+### Strongest relationship
+Credit scores were the strongest relationships in the data. Monthly Income, 
+Monthly Loan Payment, Pmt to Income ration and ProsperRating all showed strong
+relationships withcredit scores.  
+
+
+# Multivariate Plots and Analysis
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, Prosper_income_pmt}
+# Monthly loan payment and MOnthly loan payment by Prosper
+ggplot(data=subset(loandat,ProsperRating..Alpha. != ""),
+       aes(x=MonthlyLoanPayment,
+           y=StatedMonthlyIncome, 
+           color=ProsperRating..Alpha.)) +
+  geom_point(alpha=.5, size=2, position='jitter') +
+  ylim(0,50000) +
+  scale_color_brewer(palette = 3,
+    type = 'div',
+    guide = guide_legend(title = 'Prosper Rating', reverse = T,
+                         override.aes = list(alpha = 1, size = 2)))
+```
+
+Lower prosper ratings are correlated more closely to lower loan payments than
+higher prosper rating applications. Interesting to note that the low payment for 
+low prosper ratings does not seem to change acorss income levels. 
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, LoandStatus_Income_Pmt}
+# Monthly loan payment and MOnthly loan payment by loan status (KEEP)
+ggplot(data=loandat,
+       aes(x=MonthlyLoanPayment,
+           y=StatedMonthlyIncome, 
+           color=loan.status.rollup)) +
+  geom_point(alpha=.5, size=2, position='jitter') +
+  ylim(0,50000) +
+  scale_color_brewer(palette = 3,
+    type = 'seq',
+    guide = guide_legend(title = 'Loan status', reverse = F,
+                         override.aes = list(alpha = 1, size = 2)))
+```
+
+With the Income and Loan Payment plot by Loan stats we start seeing patterns 
+emerge regarding the loan status categories.  Defaulted / Charged off loans are
+more likely to have high loan pmts and lower incomes whereas paid off loans show
+an opposite trends.  Will create a plot using pmt.to.income.ratio to see if this
+holds true.
+
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, Nultivariate_Plots2}
+
+#pmt to inc, ratio and debt to income ratio by loan statu
+ggplot(data=loandat,
+       aes(x=pmt.to.income.ratio,
+           y=DebtToIncomeRatio, 
+           color=loan.status.rollup)) +
+  geom_point(alpha=.5, size=2, position='jitter') +
+  ylim(0,1) +
+  xlim(0,.5) +
+  theme_dark() +
+  scale_color_brewer(palette = 3,
+    type = 'seq',
+    guide = guide_legend(title = 'Loan status', reverse = F,
+                         override.aes = list(alpha = 1, size = 2)))
+```
+
+While its a different look the trend seen previously does hold true.  Defaulted
+loans are generally above 50% debt to income ratio and above 20% Payment to 
+Income. We should also note that the Debt to Income ratio is prior to the loans
+in the file.
+
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, Income_and_Pmt_D2IR}
+#Cut Debt to Income Ratio
+summary(loandat$DebtToIncomeRatio)
+loandat$debttoincomeratio.bucket <- cut(loandat$DebtToIncomeRatio
+                                  , breaks=c(0,.140,.22,.32,10.10))
+
+
+# Monthly loan payment and MOnthly loan payment by Debt to income ratio
+ggplot(data=subset(loandat, !is.na(debttoincomeratio.bucket)),
+       aes(x=MonthlyLoanPayment,
+           y=StatedMonthlyIncome, 
+           color=debttoincomeratio.bucket)) +
+  geom_point(alpha=.5, size=2, position='jitter') +
+  ylim(0,50000) +
+  scale_color_brewer(palette = 1,
+    type = 'div',
+    guide = guide_legend(title = 'Debt to Income Ratio', reverse = F,
+                         override.aes = list(alpha = 1, size = 2)))
+```
+
+Plotting Income and Loan Payment gives a good view of how closely aligned the
+ratio of loan to income is with debt to income at the time of the loan. Higer
+debt to income ratios are clearly at the lower end of the y axis. 
+
+Debit to Income Ratio bucket was created for this plot
+
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, loanstatus_and_P2IR_Credit}
+
+#Cut Credit scores
+summary(loandat$CreditScoreRangeUpper)
+loandat$creditrange.bucket.fico <- cut(loandat$CreditScoreRangeUpper
+                                  , breaks=c(300,579,669,739,799,899))
+
+
+# Monthly loan payment and Debt to Income Ratio by CreditScore
+ggplot(data=subset(loandat,!is.na(creditrange.bucket.fico)),
+       aes(x=loan.status.num,
+           y=pmt.to.income.ratio, 
+           color=creditrange.bucket.fico)) +
+  geom_point(alpha=.5, size=2, position='jitter') +
+  ylim(0,1) +
+  scale_color_brewer(
+    type = 'div',
+    guide = guide_legend(title = 'Credit Score', reverse = F,
+                         override.aes = list(alpha = 1, size = 2)))
+```
+
+THis view shows that lower credit scores are more prevelant for loans which are
+in a default state.
+
+Credit score range buckets were created for this plot.
+
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, Prosper_and_P2IR_by_Credit}
+
+# credit score and Debt Ratio by Prosper
+ggplot(data=subset(loandat,ProsperRating..Alpha. != ""),
+       aes(x=ProsperRating..numeric.,
+           y=pmt.to.income.ratio, 
+           color=creditrange.bucket.fico)) +
+  geom_point(alpha=.5, size=2, position='jitter') +
+  ylim(0,1) +
+  scale_color_brewer(palette = 5,
+    type = 'div',
+    guide = guide_legend(title = 'Credit Score', reverse = F,
+                         override.aes = list(alpha = 1, size = 2)))
+```
+
+The prosper rating plot shows a more clear picture of how credit range changes 
+as propser rating changes.  This implies that Prosper Rating uses Credit score 
+as one of its primary inputs (The formula used for Prosper score is proprietary 
+and I was unable to find exactly how it is calculated.
+
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, Nultivariate_Plots6}
+
+#Facet view of pmt and debt ratios by credit range across Prosper rating
+ggplot(data=subset(loandat, !is.na(creditrange.bucket.fico) & 
+                     ProsperRating..Alpha. !=""), 
+       aes(y=pmt.to.income.ratio,
+           x=DebtToIncomeRatio,
+           color=creditrange.bucket.fico)) +
+  geom_point(alpha=.1, size=2, position='jitter') +
+  xlim(0,1) +
+  ylim(0,1) +
+  facet_wrap( ~ ProsperRating..Alpha.)
+```
+
+The facet view of pmt to income ratio by debit to income ratio by credit range
+for each Prosper rating shows more clearly how credit scores change by prosper 
+rating
+
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, P2IR_and_D2IR_by_stat_prosper}
+
+
+#Dual plot of pmt and debt ratios by Loan status and Prosper Ratings
+p1 <- ggplot(data=subset(loandat, ProsperRating..Alpha. != ""), 
+       aes(y=pmt.to.income.ratio,
+           x=DebtToIncomeRatio,color=ProsperRating..Alpha.)) +
+  geom_point(alpha=.5, size=2, position='jitter') +
+  xlim(0,1) +
+  ylim(0,.5) +
+  scale_color_brewer(palette = 1,
+    type = 'div',
+    guide = guide_legend(title = 'Prosper Rating', reverse = F,
+                         override.aes = list(alpha = 1, size = 2)))
+
+p2 <- ggplot(data=loandat, 
+       aes(y=pmt.to.income.ratio,
+           x=DebtToIncomeRatio,color=loan.status.rollup)) +
+  geom_point(alpha=.5, size=2, position='jitter') +
+  xlim(0,1) +
+  ylim(0,.5) +
+  scale_color_brewer(palette = 1,
+    type = 'div',
+    guide = guide_legend(title = 'Loan Status', reverse = F,
+                         override.aes = list(alpha = 1, size = 2)))
+
+grid.arrange(p1,p2,ncol=1)
+```
+
+The dual plot shows a good comparison of how prosper rating differs from loan
+status across the same set of data.  Both show simlar trends where higher 
+payment to income ratios and debt to income ratios lead to low scores and / or 
+defaulted loans.  
+
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, Nultivariate_Plots8}
+
+
+#LOAN RATE - bucket data
+summary(loandat$BorrowerAPR)
+loandat$APR.bucket <- cut(loandat$BorrowerAPR, breaks = c(0.00653,0.15629,.20976,.28384,.51229))
+
+
+#pmt ratio and credit score by APR Bucket
+ggplot(data=subset(loandat,!is.na(APR.bucket)), 
+       aes(x=pmt.to.income.ratio, y=CreditScoreRangeUpper, color=APR.bucket)) +
+  geom_point(alpha=.5, size = 2, position='jitter') +
+  ylim(600,900) +
+  xlim(0,.5) +
+  scale_color_brewer(
+    type = 'div',
+    guide = guide_legend(title = 'Borrower APR', reverse = T,
+                         override.aes = list(alpha = 1, size = 2))) 
+```
+
+A view of Borrower APR buckets by Credit sore and payment to income ratio.  This
+is reflective of higher credit score applicants getting better loan rates.  This
+holds true even as the ratio of payment to income increases.
+
+Borrower APR buckets were created for this plot
+
+
+
+# Multivariate Analysis Summary
+
+### Talk about some of the relationships you observed in this part of the 
+One of the  main areas I focused on was how Prosper Ratings treated debt to 
+income ratios as well as as monthly payment to monthly income ratios.  I aslo
+looked at similar plots using the loan status which is the reality of the status
+of each loan.  Similar plots were also done with Credit ranges.  Looking at 
+dual plots of the same x and y data but colored by prosper and loan status were
+the most helpful for me in getting a view into the accuracy of Prosper Ratings.
+
+### Were there any interesting or surprising interactions between features?
+It's not surprising that defaulted loans tend to have higher debit to income
+and pmt to income ratios, but it was surprising to see the spike of high debt
+to income ratios for Paid off loans. It was also interesting to note the 
+often considerable difference between what the loan status shows as the actual 
+status of the loan and what the ProsperRating estimated the loan risk to be
+
+### OPTIONAL: Did you create any models with your dataset? Discuss the 
+Model not created.
+
+------
+
+# Final Plots and Summary
+
+
+### Plot One
+```{r echo=FALSE, message=FALSE, warning=FALSE, Plot_One, fig.height=8, fig.width=8}
+ggplot(data=loandat,
+       aes(y=pmt.to.income.ratio,
+           x=DebtToIncomeRatio, 
+           color=loan.status.rollup)) +
+  geom_point(alpha=.5, size=2, position='jitter') +
+  ylim(0,.5) +
+  xlim(0,1) +
+  theme_dark() +
+  scale_color_brewer(palette = 3,
+    type = 'div',
+    guide = guide_legend(title = 'Loan status', reverse = F,
+                         override.aes = list(alpha = 1, size = 2))) +
+  ggtitle(paste("Loan Status Breakdown of Payment to Income Ratio ",
+"by Debit to Income Ratio")) +
+  ylab("Payment to Income Ratio (%)") +
+  xlab("Debit to Income Ratio (%)")
+
+```
+
+### Description One
+
+This plot demonstrates that customers who default on loans tend to have high 
+Debt to Income and Payment to Income Ratios.  The defaulting customers are 
+represented in green and are predominantly above 15% Payment to Income Ratio or 
+above 50% Debit to Income Ratio (in many cases both are true.  As I explored
+this data, it was apparent that there were exceptions to everything and I go 
+into this further in the the reflection section.  Another interesting note is 
+the low end of the Payment To Income Scale.  These data is dominated by paid off
+loans, regardless of the Debit to Income Ratio.  Even at 50% Debit to Income 
+Ratio, customers with very low Payment to Income Ratio were paying off loans.
+THis is an indicator that Payment to Income Ratio could be a more important 
+factor in predict the eventual loan outcome
+
+
+### Plot Two
+```{r echo=FALSE, message=FALSE, warning=FALSE, Plot_Two, fig.height=8, fig.width=8}
+
+#Fix sort order for facets
+loandat$prosperrating.sort = factor(loandat$ProsperRating..Alpha.
+                                    , levels=c('AA','A','B','C','D','E','HR'))
+
+ggplot(data=subset(loandat, !is.na(creditrange.bucket.fico) & 
+                     ProsperRating..Alpha. !=""), 
+       aes(y=pmt.to.income.ratio,
+           x=DebtToIncomeRatio,
+           color=creditrange.bucket.fico)) +
+  geom_point(alpha=.5, size=2, position='jitter') +
+  xlim(0,1) +
+  ylim(0,1) +
+  facet_wrap( ~ ProsperRating..Alpha.) +
+  scale_color_brewer(palette = 1,
+    type = 'div',
+    guide = guide_legend(title = 'Credit Score Range', reverse = T, 
+                         override.aes = list(alpha = 1, size = 2))) +
+  ggtitle("Pmt to Income Ratio by Debt to Income Ratio across Prosper Rating") +
+  ylab("Payment to Income Ratio (%)") +
+  xlab("Debit to Income Ratio (%)")
+
+
+```
+
+### Description Two
+
+THis plot also looks at the Payment to Income and Debit to Income Ratios, but
+breaks it down by Credit Scores and creates Facets based on the Prosper Rating. 
+It clearly shows that Credit Scores are weighted significantly in the creation
+of Prosper Ratings as is Debit to Income Ratios.   Each succeeding facet shows a
+lowering of the overall credit rating and an extension of the how high the Debt
+to Income ratio is.  We also see a slight increase in Payment to Incomee Ratio 
+for each facet but it does not steadily change.  While I could not find data to 
+prove it stands to reason that the banking institution woudl deny loans which 
+are risky due to lack of adequate income.
+
+### Plot Three
+```{r echo=FALSE, message=FALSE, warning=FALSE, Plot_Three, fig.height=8, fig.width=8}
+p1 <- ggplot(data=subset(loandat, ProsperRating..Alpha. != ""), 
+       aes(y=pmt.to.income.ratio,
+           x=DebtToIncomeRatio,color=ProsperRating..Alpha.)) +
+  geom_point(alpha=.5, size=2, position='jitter') +
+  xlim(0,1) +
+  ylim(0,.5) +
+  theme_dark() +
+  scale_color_brewer(palette = 1, 
+    type = 'div',
+    guide = guide_legend(title = 'Prosper Rating', reverse = F,
+                         override.aes = list(alpha = 1, size = 2))) +
+  ggtitle("Payment to Income Ratio by Debt to Income Ratio") +
+  ylab("Payment to Income Ratio (%)") +
+  xlab("Debit to Income Ratio (%)")
+
+p2 <- ggplot(data=loandat, 
+       aes(y=pmt.to.income.ratio,
+           x=DebtToIncomeRatio,color=loan.status.rollup)) +
+  geom_point(alpha=.5, size=2, position='jitter') +
+  xlim(0,1) +
+  ylim(0,.5) +
+  theme_dark() +
+  scale_color_brewer(palette = 1,
+    type = 'div',
+    guide = guide_legend(title = 'Loan Status', reverse = F,
+                         override.aes = list(alpha = 1, size = 2))) +
+  ggtitle("Payment to Income Ratio by Debt to Income Ratio") +
+  ylab("Payment to Income Ratio (%)") +
+  xlab("Debit to Income Ratio (%)")
+
+ptitle1 <- "Payment to Income Ratio by Debt to Income Ratio"
+ptitle2 <- " - Excluding Current Loans"
+p3title <- paste(ptitle1, ptitle2)
+
+p3 <- ggplot(data=subset(loandat, LoanStatus != "Current"), 
+       aes(y=pmt.to.income.ratio,
+           x=DebtToIncomeRatio,color=loan.status.rollup)) +
+  geom_point(alpha=.5, size=2, position='jitter') +
+  xlim(0,1) +
+  ylim(0,.5) +
+  theme_dark() +
+  scale_color_brewer(palette = 1,
+    type = 'div',
+    guide = guide_legend(title = 'Loan Status', reverse = F,
+                         override.aes = list(alpha = 1, size = 2))) +
+  ggtitle(p3title) +
+  ylab("Payment to Income Ratio (%)") +
+  xlab("Debit to Income Ratio (%)")
+
+
+grid.arrange(p1,p2,p3,ncol=1)
+
+```
+
+### Description Three
+
+The final plot illustrates some possible deficiencies in the Propser Rating 
+system.  The first plot shows a trend of higher Debt to Income Ratio as the 
+Prosper Rating declines -- we touched on this in previous plots -- and the worst
+ratings (E and HR) dominate the plot for the for very high ratios (roughly 55% 
+and higher).  However, we do not see this clear progression in the Loan Status
+Plot (plot 2).  In the analysis process it was determined that is not truly 
+accurate to include "current" loans when comparing Prosper Ratings to Loan 
+Status.  Prosper attempts to assign a risk factor to a loan and you would not 
+be able to tell if the rating accurately reflected the risk until the loan 
+closes (through pay off or default).  This is not to say that high risk 
+automatically means a defaulted loan but we would expect that defaulted loans to
+be more heavily represented on the high end of Prosper Rating scale. The third 
+plot excludes the cu rrent loans and here we see more clearly that defaulted 
+loans do not follow the trends seen in the Ratings plot.  They are actually 
+distributed pretty evenly across the data points.
+
+------
+
+# Reflection
+
+The Prosper data set presented a challenge due to sheer number of variables that
+were available to explore.  I focused on the more common elements that you 
+would expect for loan data and analyzed how those variables correlated with the
+Prosper Rating system as well as the acdtual loan status.  I was able get a 
+pretty strong idea of what variables are considered by the Prosper Rating system
+(The Faceted plot in the final section is a great example of that) and also got
+insight into what factors impacted the loan status -- Debt To Income Ratio & 
+Credit Score of the applicant
+
+One of the major struggles was finding strong correlation between different 
+variables.  There was definite correlation found but rarely as strong as what I 
+expected to find.  It became apparent as the analysis went on that external 
+factors not reprsented in the data play a significant role in the outcome of the
+the loan.  Changes in economy, marital status changes, employment status 
+changes, medical conditions and many other factors which occur after a loan is 
+taken out will impact a persons ability to make payments.  Ironically, many of 
+those same factors may cause a person to see a loan in the first place.
+
+Future work on this data set to would be to explore the other variables which
+are included in the data set to see how they might impact a loan's status.  I 
+also believe research into external factors is necessary to truly understand 
+what impacts the outcome.  Are extenuating circumstances more common amongst 
+customers with worse prosper ratings?  What factors cause higher rated and higer
+income customers to default.  Knowing why payments are missed and why loans
+are defaulted would be very beneficial to predicting an outcome.  This would 
+certainly mean the analysis of significant amounts of data.
+

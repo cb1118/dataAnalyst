@@ -1,0 +1,122 @@
+---
+title: "Diamonds"
+output: html_document
+editor_options: 
+  chunk_output_type: inline
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(ggplot2)
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r}
+data(diamonds)
+summary(diamonds)
+head(diamonds)
+dim(diamonds)
+?diamonds
+
+```
+
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r diamond price, echo=FALSE}
+qplot(x=price, data=diamonds, binwidth=100,
+      color = I('black'), fill=I('#099DD9'),
+      xlab='Diamond Price (USD)',
+      ylab='Number of Diamonds in Price Group',
+      main='Volume of Diamonds by Price')
+```
+
+```{r}
+summary(diamonds$price)
+table(diamonds$price)
+summary(diamonds$price >= 15000)
+summary(diamonds$price < 500)
+summary(diamonds$price < 250)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+
+```{r}
+qplot(x=price, data=diamonds, binwidth=25,
+      color = I('black'), fill=I('#099DD9'),
+      xlab='Diamond Price (USD)',
+      ylab='Number of Diamonds in Price Group',
+      main='Volume of Diamonds by Price') +
+  scale_x_continuous(limits=c(250,1500), breaks=seq(250,1500,100))
+```
+
+```{r}
+qplot(x=price, data=diamonds, binwidth=100,
+      color = I('black'), fill=I('#099DD9'),
+      xlab='Diamond Price (USD)',
+      ylab='Number of Diamonds in Price Group',
+      main='Volume of Diamonds by Price') +
+  facet_wrap(~cut, scales=c('free_y'))
+```
+
+```{r}
+by(diamonds$price, diamonds$cut, max)
+by(diamonds$price, diamonds$cut, min)
+by(diamonds$price, diamonds$cut, median)
+by(diamonds$price, diamonds$cut, summary)
+```
+
+```{r}
+qplot(x = price, data = diamonds) + facet_wrap(~cut, scales=c('free_y'))
+```
+```{r}
+qplot(x=price/carat, data=diamonds, binwidth=.1) +
+  facet_wrap(~cut) +
+  scale_x_continuous() +
+  scale_x_log10()
+```
+
+```{r}
+qplot(x=clarity, y=price, 
+      data=diamonds,
+      geom='boxplot', ylim=c(0,7000)) 
+# can you ylim or this: +  scale_y_continuous(limits=c(0,1000))
+
+qplot(x=clarity, y=price, 
+      data=diamonds,
+      geom='boxplot') +
+  coord_cartesian(ylim=c(0,7000))
+#using coord_cartesian assures that the data summary below will match the box plot(Data will not be removed with this paramater)
+
+by(diamonds$price, diamonds$clarity, summary)
+
+?diamonds
+```
+
+```{r}
+by(diamonds$price, diamonds$color, summary)
+```
+
+```{r}
+by(diamonds$price/diamonds$carat, diamonds$color, summary)
+
+qplot(x=color, y=price/carat, 
+      data=diamonds,
+      geom='boxplot') +
+  coord_cartesian(ylim=c(0,6000))
+
+```
+
+```{r}
+qplot(x=carat, data=diamonds, binwidth=.05,
+      geom='freqpoly') +
+  scale_x_continuous(limits=c(0,3), breaks=seq(0,3,.1))
+```
+

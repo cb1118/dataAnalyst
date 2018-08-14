@@ -1,0 +1,206 @@
+---
+title: "GapMinder"
+output: html_document
+editor_options: 
+  chunk_output_type: console
+---
+
+<!-- Data Source: -->
+<!-- Prices of Personal Computers - Downloaded from Github (https://vincentarelbundock.github.io/Rdatasets/datasets.html) -->
+<!-- Description - a cross-section from 1993 to 1995 -->
+
+<!-- number of observations : 6259 -->
+<!-- country : United States -->
+
+<!-- A dataframe containing : -->
+
+<!-- price -->
+<!-- price in US dollars of 486 PCs -->
+
+<!-- speed -->
+<!-- clock speed in MHz -->
+
+<!-- hd -->
+<!-- size of hard drive in MB -->
+
+<!-- ram -->
+<!-- size of Ram in in MB -->
+
+<!-- screen -->
+<!-- size of screen in inches -->
+
+<!-- Source -->
+<!-- Stengos, T. and E. Zacharias (2005) "Intertemporal pricing and price discrimination : a semiparametric hedonic analysis of the personal computer market", Journal of Applied Econometrics, forthcoming. -->
+
+<!-- References -->
+<!-- Journal of Applied Econometrics data archive : http://qed.econ.queensu.ca/jae/. -->
+
+
+
+```{r setup, include=FALSE}
+
+#questions:
+#1.  What variables contribute the most to the prices of computers?
+#2.  Does an aggregation of variables have more correlation to price than individual variables?
+
+
+knitr::opts_chunk$set(echo = TRUE)
+library(ggplot2)
+library(tidyr)
+library(dplyr)
+library(gtools)
+library(gridExtra)
+library(tibble)
+library(data.table)
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+
+```{r agricultural land}
+#Read CSV file ["Country" column name was set in Excel when data was converted to CSV]
+
+pf <- read.csv('computers.csv', header=T,  check.names = F, sep=",", quote="\"")
+
+#calculate deviations from mean for 4 variables
+pf$ram.dev.from.mean <- (pf$ram - mean(pf$ram))/pf$ram
+pf$speed.dev.from.mean <- (pf$speed - mean(pf$speed))/pf$speed
+pf$screen.dev.from.mean <- (pf$screen - mean(pf$screen))/pf$screen
+pf$hd.dev.from.mean <- (pf$hd - mean(pf$hd))/pf$hd
+
+#Calculate the average deviation from mean for the 4 variables calculated above
+pf$bigger.is.more <- (pf$ram.dev.from.mean +
+                        pf$speed.dev.from.mean +
+                        pf$screen.dev.from.mean +
+                        pf$hd.dev.from.mean) / 4
+                        
+```
+
+```{r}
+#Plot and calc correlation for different views.
+ggplot(data=pf, aes(x=price, y=hd), biwdith=1) +
+  geom_point(alpha=.05) +
+  geom_smooth(method='lm', color = 'red')
+
+with(pf,cor.test(price, hd, method='pearson'))
+# The correlation of price to HD size is fairly strong.  
+# THe very small HDs are definitely at the lower end of the price scale
+
+ggplot(data=pf, aes(x=price, y=ram), biwdith=1) +
+  geom_point(alpha=.05) +
+  geom_smooth(method='lm', color = 'red')
+
+with(pf,cor.test(price, ram, method='pearson'))
+# Amount of RAM has the most significant impact on prices.
+# given that the data was from 1993-1995 this is somewhat expected as memory prices were much higer 25 years ago.
+
+ggplot(data=subset(pf, price >= 1000 & price <= 4000), aes(x=price, y=screen), biwdith=1) +
+  geom_point(alpha=.05) +
+  geom_smooth(method='lm', color = 'red')
+
+with(subset(pf, price >= 1000 & price <= 4000),cor.test(price, screen, method='pearson'))
+# Screen size has  positive correlation wth price but was the weakest correlation of the variables tested.
+# the bulk of the data was between prices of 1500 and 3000 regardless of screen size.
+
+ggplot(data=pf, aes(x=price, y=speed), biwdith=1) +
+  geom_point(alpha=.05) +
+  geom_smooth(method='lm', color = 'red')
+
+with(pf,cor.test(price, speed, method='pearson'))
+# like screen size, CPU speed was not the most significant factor in the price of the computer.  
+
+
+ggplot(data=pf, aes(x=price, y=bigger.is.more)) +
+  geom_point(alpha=.1) +
+  xlim(1000,4500) +
+  ylim(-2,1) +
+  geom_smooth(method='lm', color = 'red') 
+
+with(pf,cor.test(price, bigger.is.more, method='pearson'))
+# the combination of variables provides the most interesting view of data. THe correlation with price is strong 
+# but more importantly it provides a view of what a customer was willing to pay across a combination of factors.
+# The highest end computers (largest components / peripherals) were not the most expensive machines
+
+```
+
+
+```{r}
+#generate plots of summarized data
+
+#summarize by RAM
+computerbyram <- pf %>%
+  group_by(ram) %>%
+  summarize(mean_price  = mean(price),
+            median_price = median(price),
+            min_price = min(price),
+            max_price = max(price),
+            n=n()) %>%
+  arrange(ram)
+
+
+computer_by_ram <- group_by(pf, ram)
+computer_mp_by_ram <- summarise(computer_by_ram, mean_price = mean(price))
+
+#summarize by screen size
+computerbyscreen <- pf %>%
+  group_by(screen) %>%
+  summarize(mean_price  = mean(price),
+            median_price = median(price),
+            min_price = min(price),
+            max_price = max(price),
+            n=n()) %>%
+  arrange(screen)
+
+computer_by_screen <- group_by(pf, screen)
+computer_mp_by_screen <- summarise(computer_by_screen, mean_price = mean(price))
+
+#summarize by speed
+computerbyspeed <- pf %>%
+  group_by(speed) %>%
+  summarize(mean_price  = mean(price),
+            median_price = median(price),
+            min_price = min(price),
+            max_price = max(price),
+            n=n()) %>%
+  arrange(speed)
+
+computer_by_speed <- group_by(pf, speed)
+computer_mp_by_speed <- summarise(computer_by_speed, mean_price = mean(price))
+
+
+#summarize by hd size
+computerbyshd <- pf %>%
+  group_by(hd) %>%
+  summarize(mean_price  = mean(price),
+            median_price = median(price),
+            min_price = min(price),
+            max_price = max(price),
+            n=n()) %>%
+  arrange(hd)
+
+computer_by_hd <- group_by(pf, hd)
+computer_mp_by_hd <- summarise(computer_by_hd, mean_price = mean(price))
+
+
+#plot data.
+p1 <- ggplot(data=computer_mp_by_ram, aes( y = mean_price, x = ram)) +
+  geom_bar(stat='identity')
+
+p2 <- ggplot(data=computer_mp_by_screen, aes( y = mean_price, x = screen)) +
+  geom_bar(stat='identity')
+
+p3 <- ggplot(data=computer_mp_by_hd, aes( y = mean_price, x = hd)) +
+  geom_bar(stat='identity')
+
+p4 <- ggplot(data=computer_mp_by_speed, aes( y = mean_price, x = speed)) +
+  geom_bar(stat='identity')
+
+grid.arrange(p1, p2, p3, p4, ncol=1)
+```
+
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.

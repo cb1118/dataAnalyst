@@ -1,0 +1,73 @@
+---
+title: "Birthdays"
+output: html_document
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(ggplot2)
+library(plyr)
+library(gridExtra)
+
+#read in file
+pf <- read.csv("birthdaysExample.csv")
+
+head(pf)
+
+pf$dates <- as.Date(pf$dates, "%m/%d/%y")
+
+pf$day <- as.numeric(format(pf$dates, "%d"))
+pf$month <- as.numeric(format(pf$dates, "%m"))
+pf$dow <-weekdays((pf$dates))
+
+#Plot different aspects of the data
+qplot(x=dates, data=pf, binwidth=1)
+
+#Plot number of birthdays by DOW. Noted that the number of birthdays decreases consistently for each day 
+# of the week (start day = Sunday)
+qplot(x=dow, data=pf) +
+  scale_x_discrete(limits=c("Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"))
+
+#Plot day of month data.  The 14th of the month definitely stands out.  Unclear based on limited data what 
+# the cause is
+qplot(x=day, data=pf, binwidth=1) +
+  scale_x_continuous(breaks=seq(1,31,1))
+
+#Plot birthdays by month
+qplot(x=month, data=pf,binwidth=1) + 
+  scale_x_continuous(breaks=seq(1,12,1))
+
+
+#Number of birthdays matching my B-Day
+subset(pf, month == 4 & day == 13)
+
+#NUmber of birthdays by month & month(s) with most birthdays.
+pf_cnt_mth <- data.frame(sort(table(pf$month),decreasing = TRUE))
+colnames(pf_cnt_mth)[1] <- "month"
+pf_cnt_mth
+
+#Day(s) with the most number of birthdays.
+pf_cnt_day <- data.frame(sort(table(pf$dates),decreasing =TRUE))
+filter(pf_cnt_day, row_number(desc(Freq)) <= 10)
+
+
+#get list of days with no birthdays
+#17 days with no birthdays
+365-nrow(pf_cnt_day)
+
+#Make sure the date column uses date format
+pf_cnt_day$Var1 <- as.Date(pf_cnt_day$Var1, "%Y-%m-%d")
+
+#create a list of all dates for 2014
+pf_dates = data.frame(seq(as.Date('2014-01-01'),as.Date('2014-12-31'),by = 1))
+colnames(pf_dates)[1] <- "all.days"
+pf_dates$all.days <- as.Date(pf_dates$all.days, "%Y-%m-%d")
+
+#use subset to list out all dates which are not in the birthdays df
+subset(pf_dates, !(all.days %in% c(pf_cnt_day$Var1)))
+
+
+```
+

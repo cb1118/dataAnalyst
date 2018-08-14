@@ -1,0 +1,398 @@
+---
+title: "Lesson 8"
+output: html_document
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r diamonds}
+data(diamonds)
+summary(diamonds)
+head(diamonds)
+dim(diamonds)
+
+#8.1
+
+ggplot()
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+plot(pressure)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+
+
+```{r}
+#8.1
+# Create a histogram of diamond prices.
+# Facet the histogram by diamond color
+# and use cut to color the histogram bars.
+
+# The plot should look something like this.
+# http://i.imgur.com/b5xyrOu.jpg
+
+# Note: In the link, a color palette of type
+# 'qual' was used to color the histogram using
+# scale_fill_brewer(type = 'qual')
+
+# This assignment is not graded and
+# will be marked as correct when you submit.
+
+# ENTER YOUR CODE BELOW THIS LINE
+# ===========================================
+ggplot(data=diamonds, aes(x=price, fill=cut)) +
+  geom_histogram() +
+  facet_wrap( ~ color ) +
+  scale_x_log10()
+
+#8.2
+# Create a scatterplot of diamond price vs.
+# table and color the points by the cut of
+# the diamond.
+
+# The plot should look something like this.
+# http://i.imgur.com/rQF9jQr.jpg
+
+# Note: In the link, a color palette of type
+# 'qual' was used to color the scatterplot using
+# scale_color_brewer(type = 'qual')
+
+# This assignment is not graded and
+# will be marked as correct when you submit.
+
+# ENTER YOUR CODE BELOW THIS LINE
+# ===========================================
+
+ggplot(data=diamonds, aes(x=price, y=table, color=cut)) +
+  geom_point()
+
+
+#8.4
+# Create a scatterplot of diamond price vs.
+# volume (x * y * z) and color the points by
+# the clarity of diamonds. Use scale on the y-axis
+# to take the log10 of price. You should also
+# omit the top 1% of diamond volumes from the plot.
+
+# Note: Volume is a very rough approximation of
+# a diamond's actual volume.
+
+# The plot should look something like this.
+# http://i.imgur.com/excUpea.jpg
+
+# Note: In the link, a color palette of type
+# 'div' was used to color the scatterplot using
+# scale_color_brewer(type = 'div')
+
+# This assignment is not graded and
+# will be marked as correct when you submit.
+
+# ENTER YOUR CODE BELOW THIS LINE
+# ===========================================
+diamonds <- transform(diamonds, volume = x * y * z)
+
+
+ggplot(data=subset(diamonds, volume < quantile(volume, 0.99)), aes(y=price, x=volume, color=clarity)) +
+  geom_jitter(size=3) +
+  scale_y_log10()
+
+
+#8.5
+# Many interesting variables are derived from two or more others.
+# For example, we might wonder how much of a person's network on
+# a service like Facebook the user actively initiated. Two users
+# with the same degree (or number of friends) might be very
+# different if one initiated most of those connections on the
+# service, while the other initiated very few. So it could be
+# useful to consider this proportion of existing friendships that
+# the user initiated. This might be a good predictor of how active
+# a user is compared with their peers, or other traits, such as
+# personality (i.e., is this person an extrovert?).
+
+# Your task is to create a new variable called 'prop_initiated'
+# in the Pseudo-Facebook data set. The variable should contain
+# the proportion of friendships that the user initiated.
+
+# This programming assignment WILL BE automatically graded.
+pf <- read.csv('pseudo_facebook.tsv', sep='\t')
+
+pf <-transform(pf, prop_initiated = friendships_initiated/friend_count)  
+
+#8.6
+# Create a line graph of the median proportion of
+# friendships initiated ('prop_initiated') vs.
+# tenure and color the line segment by
+# year_joined.bucket.
+
+# Recall, we created year_joined.bucket in Lesson 5
+# by first creating year_joined from the variable tenure.
+# Then, we used the cut function on year_joined to create
+# four bins or cohorts of users.
+
+# (2004, 2009]
+# (2009, 2011]
+# (2011, 2012]
+# (2012, 2014]
+pf$year_joined <- 2014 - ceiling(pf$tenure/365)
+pf$year_joined.bucket <- cut(pf$year_joined, breaks=c(2004,2009,2011,2012,2014))
+
+ggplot(aes(y=prop_initiated, x=tenure), data=subset(pf, !is.na(prop_initiated))) +
+  geom_line(aes(color=year_joined.bucket), stat = 'summary', fun.y=median)
+
+#8.7
+# Smooth the last plot you created of
+# of prop_initiated vs tenure colored by
+# year_joined.bucket. You can bin together ranges
+# of tenure or add a smoother to the plot.
+
+# There won't be a solution image for this exercise.
+# You will answer some questions about your plot in
+# the next two exercises.
+ggplot(aes(x = 7 * round(tenure / 7), y = prop_initiated / tenure),
+       data=subset(pf, !is.na(prop_initiated))) +
+  geom_smooth(aes(color = year_joined.bucket))
+
+#8.9 
+
+by(pf$prop_initiated, pf$year_joined.bucket, summary)
+
+#8.10
+# Create a scatter plot of the price/carat ratio
+# of diamonds. The variable x should be
+# assigned to cut. The points should be colored
+# by diamond color, and the plot should be
+# faceted by clarity.
+
+ggplot(data=diamonds, aes(x=cut, y=price/carat, color=color)) +
+  geom_jitter() +
+  facet_wrap(~clarity)
+
+```
+
+```{r}
+#3.11
+# The Gapminder website contains over 500 data sets with information about
+# the world's population. Your task is to continue the investigation you did at the
+# end of Problem Set 4 or you can start fresh and choose a different
+# data set from Gapminder.
+
+# If you’re feeling adventurous or want to try some data munging see if you can
+# find a data set or scrape one from the web.
+
+# In your investigation, examine 3 or more variables and create 2-5 plots that make
+# use of the techniques from Lesson 5.
+
+# You can find a link to the Gapminder website in the Instructor Notes.
+
+# Once you've completed your investigation, create a post in the discussions that includes:
+#       1. the variable(s) you investigated, your observations, and any summary statistics
+#       2. snippets of code that created the plots
+#       3. links to the images of your plots
+
+# Copy and paste all of the code that you used for
+# your investigation, and submit it when you are ready.
+# ============================================================================================
+#http://www.gapminder.org/data/
+
+#
+#Data set info: The data set used was found at the URL below.
+
+#http://archive.ics.uci.edu/ml/datasets/Absenteeism+at+work
+
+#Abstract: The database was created with records of absenteeism at work from July 2007 to July 2010 at a courier company in Brazil.
+
+
+library(ggplot2)
+library(gridExtra)
+library(plyr)
+library(dplyr)
+library(gtools)
+library(gridExtra)
+
+
+pf = read.csv("Absenteeism_at_work.csv")
+
+head(pf)
+
+str(pf)
+pf$ID <- factor(pf$ID)
+
+
+pf$education.level <- ifelse(pf$Education == 1, "high school", 
+                             ifelse(pf$Education==2, "graduate", 
+                                    ifelse(pf$Education==3, "post graduate",
+                                           ifelse(pf$Education==4, "masters and higher","unknown"))))
+head(pf)
+
+pf$education.level <- factor(pf$education.level)
+
+
+by(pf$education.level, pf$Service.time, summary)
+
+#pfhs <- subset(pf, education.level == "high school")
+
+#Initial view of Absenteesim by Age and DOW.  Nothign specific stands out but there is a tendency
+#for younger employees to be absent more often.  More on this below.
+ggplot(data = pf, aes(y=Absenteeism.time.in.hours, x=Age, color=Day.of.the.week)) +
+    geom_jitter(size=3)
+ggsave("L8_11-absentHoursbyAge_DOW.png")
+
+#DOW data was unremarkable.  Monday had most occurrences but did not vary greatly across days.  Plot not saved
+ggplot(data=pf,aes(x=Day.of.the.week)) + 
+  geom_histogram()
+
+#Transportation expense has a very low correlation to absenteeism.
+with(pf,cor.test(Absenteeism.time.in.hours, Transportation.expense, method='pearson'))
+
+#ggplot(data = pf, aes(y=Absenteeism.time.in.hours, x=Transportation.expense)) +
+#  geom_point()
+
+summary(pf$Age)
+
+#number of occurrences shown across each day of the week shows a farily consistent pattern with lower ages 
+#having more absences.
+ggplot(data=pf, aes(x=Age, fill=Absenteeism.time.in.hours)) +
+  geom_histogram() +
+  facet_wrap( ~ Day.of.the.week )
+ggsave("L8_11-absentHoursbyAge_DOW_FW.png")
+
+#ggplot(data=pf,aes(x=Reason.for.absence)) +
+#  geom_histogram()
+
+
+#ggplot(data=pf, aes(x=Age, fill=Absenteeism.time.in.hours)) +
+#  geom_histogram() +
+#  facet_wrap( ~ Service.time )
+
+#BMI Cuts
+#cut BMI data 
+summary(pf$Body.mass.index)
+
+pf$BMI.bucket <- cut(pf$Body.mass.index, breaks=c(19,24,25,31,38))
+
+#ggplot(aes(y = Age, x = Absenteeism.time.in.hours),data = subset(pf,!is.na(BMI.bucket))) + 
+#  geom_line(aes(color=BMI.bucket), stat = 'summary', fun.y=median) +
+#  geom_line(stat='summary', fun.y = median, linetype = 2)
+
+#KEEP - Shows that BMI does not really have an impact.  Age and Tenure are biggest factors
+ggplot(aes(x = 3 * round(Service.time / 3), y = Absenteeism.time.in.hours / Service.time),
+       data = subset(pf,!is.na(BMI.bucket))) + 
+  geom_line(aes(color=BMI.bucket), stat = 'summary', fun.y=median) +
+  geom_line(stat='summary', fun.y = median, linetype = 2)
+ggsave("L8_11-bmiCutAbsenteeismByServiceTime.png")
+
+
+#ggplot(aes(x = 3 * round(Service.time / 3), y = Absenteeism.time.in.hours / Service.time),
+#       data = subset(pf,!is.na(BMI.bucket))) + 
+#  geom_smooth(aes(color=BMI.bucket))
+
+
+#Son
+#little to no correlation.  MOre childern showed lower absenteeism
+
+#Service TIme
+summary(pf$Service.time)
+pf$service_time.bucket <- cut(pf$Service.time, breaks=c(1,9,13,16,29))
+
+#ggplot(aes(y = Age, x = Absenteeism.time.in.hours),data = subset(pf,!is.na(service_time.bucket))) + 
+#  geom_line(aes(color=service_time.bucket), stat = 'summary', fun.y=median) +
+#  geom_line(stat='summary', fun.y = median, linetype = 2)
+
+#ggplot(aes(x = Absenteeism.time.in.hours/Service.time, y = Age),data = subset(pf, !is.na(service_time.bucket))) + 
+#  geom_line(aes(color=service_time.bucket), stat = 'summary', fun.y=mean) 
+
+#ggplot(aes(x=Service.time, y=Absenteeism.time.in.hours/Service.time), data = subset(pf, #!is.na(service_time.bucket))) + 
+#  geom_point(aes(color=serice_time.bucket), stat = 'summary', fun.y=mean)
+
+#Service time, particularly employees with less service appear far more likely to be absent.  Other analsys showed
+#that service time (and age) alone are the primary factors.  Other variables do no have teh same level of impact
+ggplot(aes(x=Service.time, y=Absenteeism.time.in.hours/Service.time), 
+       data = subset(pf, !is.na(service_time.bucket))) + 
+  geom_line(aes(color=service_time.bucket), stat = 'summary', fun.y=median)
+ggsave("L8_11-serviceTimeBucketAbsenteeismByServiceTime.png")
+
+#same plot for high school education
+
+summary(pfhs$Service.time)
+
+pfhs$service_time.bucket <- cut(pfhs$Service.time, breaks=c(3,10,13,18,29))
+
+ggplot(aes(x=Service.time, y=Absenteeism.time.in.hours/Service.time), 
+       data = subset(pfhs, !is.na(service_time.bucket))) + 
+  geom_line(aes(color=service_time.bucket), stat = 'summary', fun.y=median)
+
+#Creating age buckets 
+summary(pf$Age)
+pf$age.bucket <- cut(pf$Age, breaks=c(27,31,37,40,58))
+
+
+#ggplot(aes(x=Service.time, y=Absenteeism.time.in.hours/Service.time), 
+#       data = subset(pf, !is.na(age.bucket))) + 
+#  geom_line(aes(color=age.bucket), stat = 'summary', fun.y=median)
+
+#ggplot(aes(x= 7* round(Service.time/7), y=Absenteeism.time.in.hours/Service.time), 
+#       data = subset(pf, !is.na(age.bucket))) + 
+#  geom_line(aes(color=age.bucket), stat = 'summary', fun.y=mean)
+
+#Like the analisys across service time buckets, age buckets show a similar view.  There is variance within the 
+#age groups but clearly lower age employees are absent more often - 
+ggplot(aes(x= 3* round(Service.time/3), y=Absenteeism.time.in.hours/Service.time), 
+       data = subset(pf, !is.na(age.bucket))) +
+  geom_smooth(aes(color=age.bucket))
+ggsave("L8_11-AgeBucketAbsenteeismByServiceTime.png")
+
+
+
+#Education Level
+#ggplot(data = pf, aes(y=Absenteeism.time.in.hours, x=education.level)) +
+#    geom_point()
+
+#ggplot(aes(y = Age, x = Absenteeism.time.in.hours),data = subset(pf, Age <= quantile(pf$Age,.95))) + 
+#  geom_line(aes(color=education.level), stat = 'summary', fun.y=median, size=2) +
+#  geom_line(stat='summary', fun.y = median, linetype = 2)
+
+#ggplot(aes(x = Absenteeism.time.in.hours, y = Age),data = pf) + 
+#  geom_line(aes(color=education.level), stat = 'summary', fun.y=mean) +
+#  scale_x_log10()
+
+#ggplot(aes(y = Absenteeism.time.in.hours, x = Age),data = pf) + 
+#  geom_smooth(aes(color = education.level))
+
+#Eductation level 1st and 3rd quartiles are similar across education levels.  Where has high school education
+#employees have a number of outliers above the 3rd quartile, they also have one of the lower medians for hours
+#of absenc3
+ggplot(aes(x = education.level, y=Absenteeism.time.in.hours), data = pf) +
+  geom_boxplot() +
+  stat_summary(fun.y=mean, geom = 'point', shape=4)
+ggsave("L8_11-absenceByEducationLevel.png")
+
+
+#Social Drinking and Smoking did appear to impact absentism (Plots not saved)
+ggplot(aes(x=Absenteeism.time.in.hours, y=Social.drinker, color = education.level), data=pf) +
+  geom_point()
+
+by(pf$Absenteeism.time.in.hours, pf$Social.drinker, summary)
+
+ggplot(aes(x=Absenteeism.time.in.hours, y=Social.smoker, color = education.level), data=pf) +
+  geom_point()
+
+by(pf$Absenteeism.time.in.hours, pf$Social.smoker, summary)
+
+```
+
+

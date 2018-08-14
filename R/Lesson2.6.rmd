@@ -1,0 +1,140 @@
+---
+title: "Lesson2.6"
+output: html_document
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(dplyr)
+library(ggplot2)
+library(gridExtra)
+```
+
+```{r}
+?diamonds
+data("diamonds")
+head(diamonds)
+
+
+#2.6.1 Plot
+
+ggplot(data=diamonds, aes(x=price, y=x)) +
+  geom_point()
+ggplot(data=diamonds, aes(x=price, y=y)) +
+  geom_point()
+ggplot(data=diamonds, aes(x=price, y=z)) +
+  geom_point()
+
+
+
+#2.6.3 - Correlation
+
+with(diamonds, cor.test(price, x, method = 'pearson'))
+with(diamonds, cor.test(price, y, method = 'pearson'))
+with(diamonds, cor.test(price, z, method = 'pearson'))
+
+#2.6.4 - Plot price vs depth
+
+ggplot(data=diamonds, aes(x=price, y=depth)) +
+  geom_point()
+
+
+#2.6.5 - Adjust plot to 1/100 transparency
+ggplot(data = diamonds, aes(x = depth, y = price)) + 
+  geom_point(alpha = .01) +
+  scale_x_continuous(breaks=seq(40,80,2))
+
+#2.6.7
+with(diamonds, cor.test(price, depth, method = 'pearson'))
+
+#2.6.8
+ggplot(data=diamonds, aes(x=carat, y=price)) +
+  geom_point() +
+  xlim(0, quantile(diamonds$carat, 0.99)) +
+  ylim(0, quantile(diamonds$price, 0.99))
+
+#2.6.9
+diamonds["volume"] <- with(diamonds, x * y * z)
+ggplot(data=diamonds, aes(x=volume, y=price)) +
+  geom_point()
+
+library(plyr)
+count(diamonds$volume==0)
+detach("package:plyr", unload=TRUE)
+
+#2.6.11
+dia_filt <- subset(diamonds, volume >0 & volume <= 800)
+with(dia_filt, cor.test(price, volume, method='pearson'))
+
+#2.6.12 - add linear model
+ggplot(data=dia_filt,aes(x=volume, y=price)) +
+  geom_point(alpha=.01) +
+  xlim(0,400) +
+  ylim(0,15000) +
+  geom_smooth(method='lm', color = 'red')
+
+with(dia_filt,cor.test(price, volume, method='pearson'))
+
+#2.6.13 - mean price by clarity
+diamondsByClarity <- diamonds %>%
+  group_by(clarity) %>%
+  summarize(mean_price  = mean(price),
+            median_price = median(price),
+            min_price = min(price),
+            max_price = max(price),
+            n=n()) %>%
+  arrange(clarity)
+
+head(diamondsByClarity)
+
+#2.6.14 - Bar Charts of Mean Price
+diamonds_by_clarity <- group_by(diamonds, clarity)
+diamonds_mp_by_clarity <- summarise(diamonds_by_clarity, mean_price = mean(price))
+
+diamonds_by_color <- group_by(diamonds, color)
+diamonds_mp_by_color <- summarise(diamonds_by_color, mean_price = mean(price))
+
+p_clarity <- ggplot(data=diamonds_mp_by_clarity, aes( y = mean_price, x = clarity)) +
+  geom_bar(stat='identity')
+p_color <- ggplot(data=diamonds_mp_by_color, aes( y = mean_price, x = color)) +
+  geom_bar(stat='identity')
+#pt2
+p_cut <- ggplot(data=diamonds_mp_by_cut, aes(y=mean_price, x=cut)) +
+  geom_bar(stat='identity')
+
+grid.arrange(p_clarity, p_color, ncol=1)
+#pt2
+grid.arrange(p_clarity, p_color, p_cut, ncol = 1)
+
+
+#2.6.14, pt2, mean price by cut
+diamonds_by_cut <- group_by(diamonds, cut)
+diamonds_mp_by_cut <- summarize(diamonds_by_cut, mean_price = mean(price))
+
+summary(diamonds$depth)
+?scale_x_continuous
+?xlim
+```
+
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r cars}
+summary(cars)
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+plot(pressure)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
