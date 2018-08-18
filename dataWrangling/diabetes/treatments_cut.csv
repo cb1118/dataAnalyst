@@ -1,269 +1,71 @@
-<!DOCTYPE HTML>
-<html>
-
-<head>
-    <meta charset="utf-8">
-
-    <title>treatments_cut.csv (editing)</title>
-    <link id="favicon" rel="shortcut icon" type="image/x-icon" href="/static/base/images/favicon-file.ico?v=e2776a7f45692c839d6eea7d7ff6f3b2">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
-    <link rel="stylesheet" href="/static/components/jquery-ui/themes/smoothness/jquery-ui.min.css?v=9b2c8d3489227115310662a343fce11c" type="text/css" />
-    <link rel="stylesheet" href="/static/components/jquery-typeahead/dist/jquery.typeahead.min.css?v=7afb461de36accb1aa133a1710f5bc56" type="text/css" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    
-    
-<link rel="stylesheet" href="/static/components/codemirror/lib/codemirror.css?v=ae81317fa2b3a745892c83985827d41b">
-<link rel="stylesheet" href="/static/components/codemirror/addon/dialog/dialog.css?v=c89dce10b44d2882a024e7befc2b63f5">
-
-    <link rel="stylesheet" href="/static/style/style.min.css?v=47782e517c98a53adb514cbefb4528f2" type="text/css"/>
-    
-
-    <link rel="stylesheet" href="/custom/custom.css" type="text/css" />
-    <script src="/static/components/es6-promise/promise.min.js?v=f004a16cb856e0ff11781d01ec5ca8fe" type="text/javascript" charset="utf-8"></script>
-    <script src="/static/components/preact/index.js?v=00a2fac73c670ce39ac53d26640eb542" type="text/javascript"></script>
-    <script src="/static/components/proptypes/index.js?v=c40890eb04df9811fcc4d47e53a29604" type="text/javascript"></script>
-    <script src="/static/components/preact-compat/index.js?v=f865e990e65ad27e3a2601d8adb48db1" type="text/javascript"></script>
-    <script src="/static/components/requirejs/require.js?v=6da8be361b9ee26c5e721e76c6d4afce" type="text/javascript" charset="utf-8"></script>
-    <script>
-      require.config({
-          
-          urlArgs: "v=20180815032149",
-          
-          baseUrl: '/static/',
-          paths: {
-            'auth/js/main': 'auth/js/main.min',
-            custom : '/custom',
-            nbextensions : '/nbextensions',
-            kernelspecs : '/kernelspecs',
-            underscore : 'components/underscore/underscore-min',
-            backbone : 'components/backbone/backbone-min',
-            jed: 'components/jed/jed',
-            jquery: 'components/jquery/jquery.min',
-            json: 'components/requirejs-plugins/src/json',
-            text: 'components/requirejs-text/text',
-            bootstrap: 'components/bootstrap/js/bootstrap.min',
-            bootstraptour: 'components/bootstrap-tour/build/js/bootstrap-tour.min',
-            'jquery-ui': 'components/jquery-ui/ui/minified/jquery-ui.min',
-            moment: 'components/moment/min/moment-with-locales',
-            codemirror: 'components/codemirror',
-            termjs: 'components/xterm.js/dist/xterm',
-            typeahead: 'components/jquery-typeahead/dist/jquery.typeahead.min',
-          },
-          map: { // for backward compatibility
-              "*": {
-                  "jqueryui": "jquery-ui",
-              }
-          },
-          shim: {
-            typeahead: {
-              deps: ["jquery"],
-              exports: "typeahead"
-            },
-            underscore: {
-              exports: '_'
-            },
-            backbone: {
-              deps: ["underscore", "jquery"],
-              exports: "Backbone"
-            },
-            bootstrap: {
-              deps: ["jquery"],
-              exports: "bootstrap"
-            },
-            bootstraptour: {
-              deps: ["bootstrap"],
-              exports: "Tour"
-            },
-            "jquery-ui": {
-              deps: ["jquery"],
-              exports: "$"
-            }
-          },
-          waitSeconds: 30,
-      });
-
-      require.config({
-          map: {
-              '*':{
-                'contents': 'services/contents',
-              }
-          }
-      });
-
-      // error-catching custom.js shim.
-      define("custom", function (require, exports, module) {
-          try {
-              var custom = require('custom/custom');
-              console.debug('loaded custom.js');
-              return custom;
-          } catch (e) {
-              console.error("error loading custom.js", e);
-              return {};
-          }
-      })
-
-    document.nbjs_translations = {"domain": "nbjs", "locale_data": {"nbjs": {"": {"domain": "nbjs"}}}};
-    </script>
-
-    
-    
-
-</head>
-
-<body class="edit_app "
- 
-data-base-url="/"
-data-file-path="treatments_cut.csv"
-
-  
- 
-
-dir="ltr">
-
-<noscript>
-    <div id='noscript'>
-      Jupyter Notebook requires JavaScript.<br>
-      Please enable it to proceed. 
-  </div>
-</noscript>
-
-<div id="header">
-  <div id="header-container" class="container">
-  <div id="ipython_notebook" class="nav navbar-brand"><a href="/tree" title='dashboard'>
-      <img src='/static/base/images/logo.png?v=641991992878ee24c6f3826e81054a0f' alt='Jupyter Notebook'/>
-  </a></div>
-
-  
-
-<span id="save_widget" class="pull-left save_widget">
-    <span class="filename"></span>
-    <span class="last_modified"></span>
-</span>
-
-
-  
-  
-  
-  
-
-    <span id="login_widget">
-      
-    </span>
-
-  
-
-  
-  
-  </div>
-  <div class="header-bar"></div>
-
-  
-
-<div id="menubar-container" class="container">
-  <div id="menubar">
-    <div id="menus" class="navbar navbar-default" role="navigation">
-      <div class="container-fluid">
-          <p  class="navbar-text indicator_area">
-          <span id="current-mode" >current mode</span>
-          </p>
-        <button type="button" class="btn btn-default navbar-toggle" data-toggle="collapse" data-target=".navbar-collapse">
-          <i class="fa fa-bars"></i>
-          <span class="navbar-text">Menu</span>
-        </button>
-        <ul class="nav navbar-nav navbar-right">
-          <li id="notification_area"></li>
-        </ul>
-        <div class="navbar-collapse collapse">
-          <ul class="nav navbar-nav">
-            <li class="dropdown"><a href="#" class="dropdown-toggle" data-toggle="dropdown">File</a>
-              <ul id="file-menu" class="dropdown-menu">
-                <li id="new-file"><a href="#">New</a></li>
-                <li id="save-file"><a href="#">Save</a></li>
-                <li id="rename-file"><a href="#">Rename</a></li>
-                <li id="download-file"><a href="#">Download</a></li>
-              </ul>
-            </li>
-            <li class="dropdown"><a href="#" class="dropdown-toggle" data-toggle="dropdown">Edit</a>
-              <ul id="edit-menu" class="dropdown-menu">
-                <li id="menu-find"><a href="#">Find</a></li>
-                <li id="menu-replace"><a href="#">Find &amp; Replace</a></li>
-                <li class="divider"></li>
-                <li class="dropdown-header">Key Map</li>
-                <li id="menu-keymap-default"><a href="#">Default<i class="fa"></i></a></li>
-                <li id="menu-keymap-sublime"><a href="#">Sublime Text<i class="fa"></i></a></li>
-                <li id="menu-keymap-vim"><a href="#">Vim<i class="fa"></i></a></li>
-                <li id="menu-keymap-emacs"><a href="#">emacs<i class="fa"></i></a></li>
-              </ul>
-            </li>
-            <li class="dropdown"><a href="#" class="dropdown-toggle" data-toggle="dropdown">View</a>
-              <ul id="view-menu" class="dropdown-menu">
-              <li id="toggle_header" title="Show/Hide the logo and notebook title (above menu bar)">
-              <a href="#">Toggle Header</a></li>
-              <li id="menu-line-numbers"><a href="#">Toggle Line Numbers</a></li>
-              </ul>
-            </li>
-            <li class="dropdown"><a href="#" class="dropdown-toggle" data-toggle="dropdown">Language</a>
-              <ul id="mode-menu" class="dropdown-menu">
-              </ul>
-            </li>
-          </ul>
-        </div>
-      </div>
-    </div>
-  </div>
-</div>
-
-<div class="lower-header-bar"></div>
-
-
-</div>
-
-<div id="site">
-
-
-<div id="texteditor-backdrop">
-<div id="texteditor-container" class="container"></div>
-</div>
-
-
-</div>
-
-
-
-
-
-
-    
-
-
-<script src="/static/edit/js/main.min.js?v=69ef7b7a55de6f60611ff3ae94ef5069" type="text/javascript" charset="utf-8"></script>
-
-
-<script type='text/javascript'>
-  function _remove_token_from_url() {
-    if (window.location.search.length <= 1) {
-      return;
-    }
-    var search_parameters = window.location.search.slice(1).split('&');
-    for (var i = 0; i < search_parameters.length; i++) {
-      if (search_parameters[i].split('=')[0] === 'token') {
-        // remote token from search parameters
-        search_parameters.splice(i, 1);
-        var new_search = '';
-        if (search_parameters.length) {
-          new_search = '?' + search_parameters.join('&');
-        }
-        var new_url = window.location.origin + 
-                      window.location.pathname + 
-                      new_search + 
-                      window.location.hash;
-        window.history.replaceState({}, "", new_url);
-        return;
-      }
-    }
-  }
-  _remove_token_from_url();
-</script>
-</body>
-
-</html>
+given_name,surname,auralin,novodra,hba1c_start,hba1c_end,hba1c_change
+jožka,resanovič,22u - 30u,-,7.56,7.22,0.34
+inunnguaq,heilmann,57u - 67u,-,7.85,7.45,
+alwin,svensson,36u - 39u,-,7.78,7.34,
+thể,lương,-,61u - 64u,7.64,7.22,0.92
+amanda,ribeiro,36u - 44u,-,7.85,7.47,0.38
+meya,sjöberg,-,42u - 42u,7.77,7.42,0.35
+sara,miles,30u - 35u,-,7.53,7.12,
+frydryk,adamski,63u - 74u,-,7.75,7.27,
+jane,citizen,-,37u - 38u,7.98,7.6,
+angela,lavrentyev,-,28u - 24u,7.61,7.14,0.97
+edelma,villalpando,-,24u - 26u,7.99,7.56,0.93
+gabriela,michalčíková,26u - 36u,-,8.37,7.97,
+annika,vaara,-,20u - 21u,7.73,7.34,0.39
+bernarda,cindrić,40u - 49u,-,7.89,7.55,0.34
+chiho,higa,-,46u - 46u,7.71,7.3,
+dani,antoun,36u - 44u,-,7.73,7.34,0.39
+mijael,guerra,37u - 47u,-,7.85,7.46,0.39
+emma,barlow,48u - 57u,-,7.85,7.39,
+flavia,fiorentino,46u - 57u,-,7.95,7.6,0.35
+noe,aranda,26u - 34u,-,7.51,7.17,0.34
+seweryna,czerwinska,39u - 46u,-,7.66,7.3,0.36
+david,villadsen,26u - 39u,-,7.86,7.4,
+beatrycze,woźniak,-,26u - 27u,7.54,7.17,0.37
+miłosław,wiśniewski,-,34u - 33u,7.51,7.08,0.93
+lóa,hrafnsdóttir,22u - 31u,-,7.6,7.09,
+siebrigje,koldenhof,30u - 38u,-,7.9,7.59,0.31
+firenze,fodor,-,30u - 35u,7.89,7.55,0.34
+zoe,wellish,-,33u - 33u,7.71,7.3,0.91
+una,traustadóttir,-,35u - 34u,8.0,7.5,
+luboš,pecha,-,30u - 27u,7.79,7.45,0.34
+trifon,izmailov,58u - 63u,-,7.68,7.28,
+galit,casárez,27u - 37u,-,7.91,7.56,0.35
+kifle,mustafa,42u - 50u,-,7.8,7.41,0.39
+meaza,brhane,-,37u - 41u,7.7,7.36,0.34
+adlan,shishani,-,43u - 40u,7.84,7.37,0.97
+alvin,jackson,38u - 43u,-,7.62,7.23,0.39
+chibuzo,okoli,28u - 33u,-,7.64,7.29,0.35
+sofia,hermansen,-,34u - 34u,8.9,8.57,0.33
+guðni,heimisson,-,40u - 36u,7.64,7.24,
+maryam,dratchev,37u - 45u,-,9.91,9.46,
+eufemio,rosario,-,37u - 40u,7.54,7.26,0.28
+dalmacia,madrid,-,26u - 23u,7.67,7.21,0.96
+daimy,tromp,-,40u - 45u,9.41,8.94,0.97
+hans peter,radislav,42u - 53u,-,7.6,7.2,
+jeremy,montagu,-,52u - 52u,7.68,7.36,
+štefanija,novosel,37u - 42u,-,7.64,7.17,
+anja,mueller,43u - 56u,-,7.58,7.29,0.29
+regolo,nucci,51u - 59u,-,7.53,7.02,
+nebechi,ekechukwu,-,37u - 39u,7.78,7.39,0.39
+satsita,batukayev,-,42u - 42u,7.63,7.25,0.38
+timothy,cotton,-,26u - 25u,7.92,7.52,0.9
+bjørnar,nilsen,-,36u - 33u,7.99,7.7,
+vivien,zsinkó,30u - 38u,-,8.35,7.92,
+genet,fesahaye,25u - 35u,-,7.73,7.36,0.37
+borna,šlezinger,-,42u - 41u,7.55,7.18,
+mary,adams,-,32u - 33u,7.65,7.26,
+blanka,jurković,31u - 43u,-,7.77,7.33,
+joseph,tucker,48u - 56u,-,7.67,7.3,0.37
+christopher,woodward,-,55u - 51u,7.51,7.06,0.95
+robert,maslov,55u - 68u,-,7.65,7.35,0.3
+maret,sultygov,-,26u - 23u,7.67,7.3,
+ella,lund,38u - 47u,-,7.57,7.21,0.36
+fakhri,fakhoury,39u - 50u,-,7.83,7.39,
+žarka,rap,35u - 48u,-,7.54,7.15,
+lixue,hsueh,-,22u - 23u,9.21,8.8,0.91
+rovzan,kishiev,32u - 37u,-,7.75,7.41,0.34
+jakob,jakobsen,-,28u - 26u,7.96,7.51,0.95
+bernd,schneider,48u - 56u,-,7.74,7.44,0.3
+berta,napolitani,-,42u - 44u,7.68,7.21,
+armina,sauvé,36u - 46u,-,7.86,7.4,
